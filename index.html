@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Тренажер: атака БПЛА</title>
+<script type="module" src="./iframeResizer.contentWindow.js"></script>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#ffffff; --ink:#172033; --muted:#5f6b7a;
+    --blue:#1f5eff; --blue2:#0b2f74; --green:#15935a; --red:#df2d2d;
+    --amber:#d8870a; --line:#d9e0ea; --soft:#edf2ff; --shadow:0 18px 46px rgba(20,35,70,.15);
+  }
+  *{box-sizing:border-box}
+  html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink)}
+  .app{width:100vw;height:min(100vh,600px);max-height:600px;overflow:hidden;padding:10px;background:
+    radial-gradient(circle at 12% 15%, rgba(31,94,255,.12), transparent 24%),
+    radial-gradient(circle at 88% 75%, rgba(223,45,45,.10), transparent 28%), var(--bg)}
+  .frame{height:100%;max-width:1180px;margin:0 auto;display:grid;grid-template-rows:56px 1fr 50px;gap:8px}
+  header,.main,.footer{background:rgba(255,255,255,.88);border:1px solid rgba(217,224,234,.92);box-shadow:var(--shadow);backdrop-filter: blur(8px)}
+  header{border-radius:18px;padding:8px 12px;display:grid;grid-template-columns:1.15fr .85fr;gap:12px;align-items:center}
+  .title{display:flex;align-items:center;gap:10px;min-width:0}
+  .badge{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--red),#ff765f);display:grid;place-items:center;color:#fff;font-weight:900;font-size:22px;box-shadow:0 10px 25px rgba(223,45,45,.26);flex:0 0 auto}
+  h1{font-size:clamp(17px,2.2vw,25px);line-height:1;margin:0;font-weight:900;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sub{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .meter{min-width:0}
+  .meterTop{display:flex;justify-content:space-between;font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px}
+  .bar{height:8px;border-radius:20px;background:#e9edf5;overflow:hidden}
+  .fill{height:100%;border-radius:20px;transition:.35s ease;width:50%}
+  #riskFill{background:linear-gradient(90deg,#35b66f,#f2b84a,#e23c3c)}
+  #timeFill{background:linear-gradient(90deg,#25a7ff,#1f5eff)}
+  #teamFill{background:linear-gradient(90deg,#ff9a76,#12a765)}
+  #scoreFill{background:linear-gradient(90deg,#9b7cff,#1f5eff)}
+  .main{border-radius:22px;display:grid;grid-template-columns:31% 38% 31%;gap:10px;padding:10px;min-height:0}
+  .card{border:1px solid var(--line);border-radius:18px;background:var(--panel);min-height:0;overflow:hidden;position:relative}
+  .scene{padding:14px;display:flex;flex-direction:column;gap:10px}
+  .step{display:inline-flex;align-items:center;gap:7px;width:max-content;max-width:100%;padding:5px 9px;border-radius:999px;background:#eef4ff;color:var(--blue2);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 0 rgba(223,45,45,.55);animation:pulse 1.4s infinite}
+  @keyframes pulse{to{box-shadow:0 0 0 9px rgba(223,45,45,0)}}
+  h2{font-size:clamp(20px,2.6vw,31px);line-height:1.03;margin:0;font-weight:950;letter-spacing:-.045em}
+  .brief{font-size:15px;line-height:1.28;margin:0;color:#273247;font-weight:600}
+  .facts{display:grid;gap:7px;margin-top:auto}
+  .fact{display:flex;gap:7px;align-items:flex-start;padding:8px;border-radius:12px;background:#f7f9fd;border:1px solid #edf1f7;font-size:12px;line-height:1.15;color:#384255;font-weight:650}
+  .fact b{color:var(--blue2)}
+  .art{display:grid;grid-template-rows:1fr auto;background:linear-gradient(180deg,#fff,#eef3ff);padding:8px}
+  .art svg{width:100%;height:100%;min-height:0;display:block}
+  .hint{margin:0 4px 4px;padding:8px 10px;border-radius:14px;background:#102347;color:#fff;font-size:12px;line-height:1.22;font-weight:750;box-shadow:0 12px 28px rgba(16,35,71,.22)}
+  .choices{padding:12px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,#fff,#fafcff)}
+  .choice{border:1px solid #d9e1ef;background:#fff;border-radius:16px;padding:10px 11px;text-align:left;cursor:pointer;transition:.18s ease;display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start;min-height:62px;box-shadow:0 8px 20px rgba(24,42,78,.06)}
+  .choice:hover,.choice:focus{outline:none;transform:translateY(-1px);border-color:#9db8ff;box-shadow:0 13px 30px rgba(31,94,255,.14)}
+  .letter{width:26px;height:26px;border-radius:9px;background:#eef4ff;color:var(--blue2);font-weight:950;display:grid;place-items:center;flex:0 0 auto}
+  .ct{font-size:14px;line-height:1.16;font-weight:850;color:#1d2637}
+  .cm{font-size:11.5px;line-height:1.15;color:#647083;font-weight:650;margin-top:3px}
+  .choice.danger .letter{background:#fff0f0;color:var(--red)}
+  .choice.safe .letter{background:#eaf8f1;color:var(--green)}
+  .choice.trade .letter{background:#fff6e7;color:#a96300}
+  .feedback{position:absolute;inset:auto 10px 10px 10px;border-radius:16px;padding:12px;background:#0f1d36;color:#fff;box-shadow:0 18px 44px rgba(9,20,44,.32);transform:translateY(125%);transition:.25s ease;z-index:5}
+  .feedback.show{transform:translateY(0)}
+  .fbTitle{font-weight:950;font-size:15px;margin-bottom:4px}.fbText{font-size:12.5px;line-height:1.24;color:#e8eefc;font-weight:650}
+  .footer{border-radius:16px;padding:7px 10px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+  .log{display:flex;gap:6px;align-items:center;min-width:0;overflow:hidden}
+  .token{padding:6px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:11px;font-weight:850;white-space:nowrap;color:#354052}
+  .token.good{border-color:#bde8d1;background:#effaf4;color:#126b43}.token.bad{border-color:#f5c1c1;background:#fff2f2;color:#a32b2b}.token.warn{border-color:#f0d594;background:#fff9ec;color:#8a5700}
+  .btn{border:0;border-radius:13px;background:var(--blue);color:#fff;font-weight:950;padding:10px 13px;cursor:pointer;box-shadow:0 10px 24px rgba(31,94,255,.24)}
+  .btn.secondary{background:#102347}.btn:disabled{opacity:.45;cursor:not-allowed}
+  .modal{position:absolute;inset:10px;border-radius:22px;background:rgba(245,247,251,.96);backdrop-filter: blur(9px);z-index:10;display:none;place-items:center;padding:18px}
+  .modal.show{display:grid}.result{max-width:760px;background:#fff;border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow);display:grid;grid-template-columns:1fr 240px;gap:16px;align-items:center}
+  .result h3{font-size:30px;line-height:1;margin:0 0 8px;font-weight:950;letter-spacing:-.04em}.result p{margin:0 0 10px;color:#3f4a5d;font-weight:650;line-height:1.35}.result ul{margin:0 0 14px 18px;padding:0;font-weight:750;line-height:1.35;color:#202b3e}.scoreBig{font-size:54px;font-weight:950;color:var(--blue2);line-height:1}.scoreBig span{font-size:16px;color:var(--muted)}
+  @media(max-width:860px){.main{grid-template-columns:34% 33% 33%;gap:7px;padding:7px}header{grid-template-columns:1fr}.meters{display:none}.brief{font-size:13px}.choice{min-height:58px;padding:8px}.ct{font-size:12.5px}.cm{display:none}.fact{font-size:11px}.hint{font-size:11px}.footer{grid-template-columns:1fr auto}.token{font-size:10px;padding:5px 6px}.result{grid-template-columns:1fr}.result .artMini{display:none}}
+  @media(max-height:520px){.frame{grid-template-rows:48px 1fr 42px}.sub,.cm{display:none}.scene{padding:10px;gap:7px}h2{font-size:20px}.brief{font-size:12px}.fact{padding:6px}.choice{min-height:50px;padding:7px}.ct{font-size:12px}.hint{display:none}.footer{padding:5px 8px}.btn{padding:8px 10px}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="frame">
+    <header>
+      <div class="title"><div class="badge">!</div><div><h1>Тренажер: атака БПЛА</h1><div class="sub">Цель: вывести людей в укрытие и не попасть под повторный удар.</div></div></div>
+      <div class="meters" aria-label="Показатели">
+        <div class="meter"><div class="meterTop"><span>Риск</span><span id="riskVal">35</span></div><div class="bar"><div id="riskFill" class="fill"></div></div></div>
+        <div class="meter"><div class="meterTop"><span>Время</span><span id="timeVal">0:45</span></div><div class="bar"><div id="timeFill" class="fill"></div></div></div>
+        <div class="meter"><div class="meterTop"><span>Люди</span><span id="teamVal">4/4</span></div><div class="bar"><div id="teamFill" class="fill"></div></div></div>
+        <div class="meter"><div class="meterTop"><span>Решения</span><span id="scoreVal">0</span></div><div class="bar"><div id="scoreFill" class="fill"></div></div></div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="card scene">
+        <div class="step"><span class="pulse"></span><span id="stepLabel">Ситуация 1</span></div>
+        <h2 id="sceneTitle"></h2>
+        <p class="brief" id="sceneBrief"></p>
+        <div class="facts" id="facts"></div>
+      </section>
+
+      <section class="card art">
+        <div id="artBox"></div>
+        <p class="hint" id="hint"></p>
+      </section>
+
+      <section class="card choices" id="choices" aria-label="Варианты действий"></section>
+    </main>
+
+    <footer class="footer">
+      <div class="log" id="log"></div>
+      <button class="btn secondary" id="restartBtn">Заново</button>
+    </footer>
+  </div>
+  <div class="feedback" id="feedback"><div class="fbTitle" id="fbTitle"></div><div class="fbText" id="fbText"></div></div>
+  <div class="modal" id="modal"></div>
+</div>
+<script>
+(() => {
+  const scenes = [
+    {
+      title:'Удар пришелся в фасад',
+      brief:'Вы на 3-м этаже. Звучит тревога. В офисе стекло, дым из холла, четыре коллеги рядом.',
+      hint:'Не цельтесь в «быстрый выход». Сначала уберите людей от осколков и выберите защищенный маршрут.',
+      facts:['Окна выбило частично. Осколки падают внутрь.','Подвал открыт. Вход — через служебную лестницу.','Главная лестница идет вдоль стеклянного атриума.'],
+      choices:[
+        {t:'Увести группу в коридор без окон. Назначить замыкающего. Проверить лестницу.',m:'Медленнее, но группа выходит из зоны осколков.',cls:'safe',risk:-14,time:18,team:0,score:18,tag:['укрыли от окон','роль замыкающего'],fb:'Вы снизили риск осколков и паники. Группа получила порядок движения.',next:1},
+        {t:'Побежать к главной лестнице. Она ближе.',m:'Маршрут короткий, но проходит вдоль атриума.',cls:'trade',risk:18,time:-8,team:-1,score:-8,tag:['стеклянный атриум'],fb:'Осколки с атриума ранили одного сотрудника. Скорость не компенсировала риск.',next:1},
+        {t:'Остаться в кабинете и ждать отмену тревоги.',m:'Так проще удержать людей вместе.',cls:'danger',risk:24,time:35,team:0,score:-12,tag:['ожидание у окон'],fb:'Кабинет у фасада опасен. При атаке надо держаться дальше от окон.',next:1}
+      ]
+    },
+    {
+      title:'Коллега не может идти быстро',
+      brief:'У Алексея порез ноги. Марина хочет бежать к машине: там документы и телефон.',
+      hint:'Эвакуация — не героизм в одиночку. Помогайте, если это не останавливает всю группу в опасной зоне.',
+      facts:['Аптечка висит у выхода из коридора.','Служебная лестница свободна, но слышно хлопки с улицы.','Риск повторного удара.'],
+      choices:[
+        {t:'Дать Алексею повязку, вести его вдвоем. Марину оставить в паре с замыкающим.',m:'Первая помощь без длинной остановки.',cls:'safe',risk:-10,time:20,team:0,score:20,tag:['помощь без задержки','люди в парах'],fb:'Вы закрыли кровотечение и сохранили темп. Никто не ушёл к машине.',next:2},
+        {t:'Отправить Марину за телефоном. С Алексеем останется один человек.',m:'Связь полезна, но маршрут к машине открыт.',cls:'danger',risk:20,time:15,team:-1,score:-14,tag:['выход к машине'],fb:'Открытая площадка опасна. Документы и телефон не важнее укрытия.',next:2},
+        {t:'Остановить всех и полноценно обработать рану.',m:'Безопаснее для раны, но группа стоит у опасной зоны.',cls:'trade',risk:10,time:35,team:0,score:2,tag:['долгая остановка'],fb:'Рану надо закрыть быстро. Полная обработка — после укрытия или отмены угрозы.',next:2}
+      ]
+    },
+    {
+      title:'На лестнице дым и обломки',
+      brief:'Дым тянет сверху. На площадке лежит металлический фрагмент с проводами. Проход есть сбоку.',
+      hint:'После удара не трогайте фрагменты, боеприпасы и незнакомые предметы. Обозначьте место и обходите.',
+      facts:['Лифт работает, но шахта граничит с поврежденной стеной.','Дежурный по рации: подвал принимает людей.','Фрагмент не дымит. Происхождение неизвестно.'],
+      choices:[
+        {t:'Обойти фрагмент. Запомнить место. Сообщить дежурному после входа в подвал.',m:'Проход остается, предмет не трогают.',cls:'safe',risk:-12,time:10,team:0,score:20,tag:['не трогали фрагмент','сообщили'],fb:'Верно. Незнакомый предмет не двигают и не поднимают.',next:3},
+        {t:'Отодвинуть фрагмент ногой, чтобы никто не споткнулся.',m:'Проход станет шире, но предмет неизвестен.',cls:'danger',risk:28,time:4,team:-1,score:-18,tag:['трогали фрагмент'],fb:'Контакт с неизвестным фрагментом создаёт риск взрыва и травм.',next:3},
+        {t:'Развернуть всех к лифту. Так меньше дыма.',m:'Лифт экономит силы, но при атаке и пожаре опасен.',cls:'danger',risk:22,time:-5,team:0,score:-12,tag:['лифт при тревоге'],fb:'Лифт может остановиться или открыть двери в дым. При атаке выбирают лестницу и укрытие.',next:3}
+      ]
+    },
+    {
+      title:'Выход к подвалу через двор',
+      brief:'До входа в подземный паркинг 60 метров открытого двора. Рядом — внутренняя кладовая без окон и с несущими стенами.',
+      hint:'Если нет безопасного пути к укрытию, временно займите помещение без окон у несущей стены.',
+      facts:['Снаружи слышен второй пролет БПЛА.','Двор открыт для осколков и обломков.','Кладовая тесная, но вмещает группу.'],
+      choices:[
+        {t:'Завести группу в кладовую. Посадить у несущей стены. Ждать паузу или команду.',m:'Это не финальное укрытие, но снижает риск сейчас.',cls:'safe',risk:-16,time:22,team:0,score:21,tag:['несущая стена','ждём сигнал'],fb:'Вы выбрали ближайшую защиту вместо открытой местности.',next:4},
+        {t:'Перебежать двор до паркинга. Быстро и по одному.',m:'Финальное укрытие близко, но двор открыт.',cls:'trade',risk:23,time:-12,team:-1,score:-10,tag:['открытый двор'],fb:'Открытое место опасно при повторном пролёте. Один сотрудник получил травму от обломка.',next:4},
+        {t:'Вернуться в офис за личными вещами и касками.',m:'Каски помогут, но путь идет к фасаду.',cls:'danger',risk:18,time:28,team:0,score:-15,tag:['возврат к фасаду'],fb:'Возврат в повреждённую зону повышает риск. Вещи не забирают.',next:4}
+      ]
+    },
+    {
+      title:'Поступило сообщение: «угроза снята»',
+      brief:'В чате отдела пишут, что все закончилось. Сирена еще работает. Официального сигнала нет.',
+      hint:'Оставайтесь в защищенном месте до официальной отмены угрозы.',
+      facts:['Рация дежурного молчит.','Люди устали и хотят выйти.','На полу могут быть осколки и неразорвавшиеся элементы.'],
+      choices:[
+        {t:'Оставаться в защите. Проверить связь с дежурным. Подготовить выход после сигнала.',m:'Люди недовольны задержкой, но риск ниже.',cls:'safe',risk:-13,time:20,team:0,score:20,tag:['ждём официально'],fb:'Чат не заменяет сигнал отмены угрозы. Решение удержало группу в защите.',next:5},
+        {t:'Выпустить часть людей. Остальные подождут.',m:'Так меньше конфликтов в группе.',cls:'trade',risk:16,time:-6,team:-1,score:-9,tag:['самовольный выход'],fb:'Группа разделилась. Часть людей вышла без контроля и попала в опасную зону.',next:5},
+        {t:'Отправить одного разведать обстановку.',m:'Информация нужна, но человек выйдет один.',cls:'danger',risk:18,time:5,team:-1,score:-12,tag:['один на разведку'],fb:'Один сотрудник не должен проверять опасную зону вместо служб.',next:5}
+      ]
+    },
+    {
+      title:'Отмена угрозы подтверждена',
+      brief:'Дежурный передал отмену. Нужно выйти из укрытия и передать людей ответственному за сбор.',
+      hint:'После атаки не спешите. Смотрите под ноги. Не поднимайте предметы.',
+      facts:['На маршруте мелкие осколки.','У двери лежит цилиндрический предмет.','Снаружи работают службы.'],
+      choices:[
+        {t:'Вывести группу шагом. Обойти предмет. Сообщить место службам. Сверить список людей.',m:'Дольше, зато вы сохраняете контроль.',cls:'safe',risk:-12,time:12,team:0,score:21,tag:['осмотр под ногами','сверка людей'],fb:'Финальный участок тоже опасен. Вы сохранили контроль и сообщили о предмете.',next:'end'},
+        {t:'Ускорить выход. Предмет не трогать, список проверить позже.',m:'Быстрее освободите укрытие.',cls:'trade',risk:12,time:-8,team:0,score:1,tag:['выход без сверки'],fb:'Вы не трогали предмет, но потеряли контроль людей на сборе.',next:'end'},
+        {t:'Поднять предмет и вынести за проход.',m:'Проход станет безопаснее для остальных.',cls:'danger',risk:30,time:6,team:-1,score:-20,tag:['подняли предмет'],fb:'Неразорвавшиеся элементы и незнакомые предметы не поднимают.',next:'end'}
+      ]
+    }
+  ];
+
+  let state, idx;
+  const $ = (id)=>document.getElementById(id);
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+
+  function reset(){
+    state={risk:35,time:45,team:4,maxTeam:4,score:0,tags:[]}; idx=0;
+    $('modal').classList.remove('show'); $('feedback').classList.remove('show'); render();
+  }
+
+  function fmtTime(sec){const m=Math.floor(sec/60),s=String(sec%60).padStart(2,'0');return `${m}:${s}`}
+  function renderMeters(){
+    $('riskVal').textContent=state.risk; $('timeVal').textContent=fmtTime(state.time); $('teamVal').textContent=`${state.team}/${state.maxTeam}`; $('scoreVal').textContent=state.score;
+    $('riskFill').style.width=clamp(state.risk,0,100)+'%'; $('timeFill').style.width=clamp(100-state.time/3,5,100)+'%'; $('teamFill').style.width=(state.team/state.maxTeam*100)+'%'; $('scoreFill').style.width=clamp((state.score+40)/1.8,0,100)+'%';
+  }
+  function iconForTag(tag){
+    if(/окон|стена|сигнал|фрагмент|сверка|парах|помощь|сообщ/.test(tag)) return 'good';
+    if(/атриум|машине|трогали|лифт|двор|фасаду|самоволь|развед|подняли|ожидание/.test(tag)) return 'bad';
+    return 'warn';
+  }
+  function renderLog(){
+    const tags=state.tags.slice(-6);
+    $('log').innerHTML=tags.length?tags.map(t=>`<span class="token ${iconForTag(t)}">${t}</span>`).join(''):'<span class="token">Выберите первое действие</span>';
+  }
+  function renderArt(){
+    const labels = ['Фасад','Группа','Лестница','Укрытие','Сигнал','Выход'];
+    const active = idx;
+    $('artBox').innerHTML = `
+    <svg viewBox="0 0 420 330" role="img" aria-label="Схема ситуации">
+      <defs>
+        <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#dfe8ff"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+        <filter id="sh"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#1b2b55" flood-opacity=".18"/></filter>
+      </defs>
+      <rect x="0" y="0" width="420" height="330" rx="26" fill="url(#g1)"/>
+      <g filter="url(#sh)">
+        <path d="M75 260V96l66-28 66 28v164z" fill="#eef2f7" stroke="#c8d1df" stroke-width="3"/>
+        <path d="M207 260V114l60-24 60 24v146z" fill="#f9fbff" stroke="#c8d1df" stroke-width="3"/>
+        ${[103,137,171,225].map(y=>`<rect x="92" y="${y}" width="22" height="26" rx="4" fill="#b7c6d9"/>`).join('')}
+        ${[130,164,198].map(y=>`<rect x="233" y="${y}" width="24" height="28" rx="4" fill="#b7c6d9"/>`).join('')}
+        <polygon points="93,93 118,72 125,113" fill="#ffdad6" stroke="#e35b4f"/><path d="M62 83l-22-20 17 35-31 11 34 4-8 35 26-28 28 21-12-34 30-18-37 1z" fill="#e33b36" opacity=".85"/>
+        <path d="M54 61c18-13 34-17 57-9" stroke="#25314a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M62 52l13 10-15 4z" fill="#25314a"/>
+      </g>
+      <g>
+        <rect x="44" y="278" width="332" height="18" rx="9" fill="#c8d1df"/>
+        <rect x="258" y="242" width="74" height="47" rx="9" fill="#15284d"/><path d="M270 267h50" stroke="#5c86ff" stroke-width="5" stroke-linecap="round"/><text x="295" y="237" text-anchor="middle" font-size="14" font-weight="900" fill="#15284d">ПОДВАЛ</text>
+        <path d="M130 242c24-8 56-8 79 0" stroke="#15935a" stroke-width="9" stroke-linecap="round"/><circle cx="146" cy="231" r="13" fill="#1f5eff"/><circle cx="178" cy="229" r="13" fill="#1f5eff"/><circle cx="208" cy="234" r="13" fill="#1f5eff"/><circle cx="235" cy="238" r="13" fill="#1f5eff"/>
+        <path d="M151 244v24M178 242v26M209 247v23M236 250v19" stroke="#1f5eff" stroke-width="7" stroke-linecap="round"/>
+        <path d="M72 266l36-22M91 264l42-18" stroke="#df2d2d" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+        <path d="M313 285l34-12" stroke="#d8870a" stroke-width="7" stroke-linecap="round"/><circle cx="350" cy="272" r="7" fill="#d8870a"/>
+      </g>
+      <g transform="translate(24 20)">
+        ${labels.map((l,i)=>`<g transform="translate(${i*62} 0)"><circle cx="0" cy="0" r="12" fill="${i<active?'#15935a':i===active?'#df2d2d':'#c8d1df'}"/><text x="0" y="4" text-anchor="middle" font-size="11" font-weight="900" fill="#fff">${i+1}</text><text x="0" y="27" text-anchor="middle" font-size="10" font-weight="800" fill="#43506a">${l}</text></g>`).join('')}
+      </g>
+    </svg>`;
+  }
+  function render(){
+    const sc=scenes[idx]; renderMeters(); renderLog(); renderArt();
+    $('stepLabel').textContent=`Ситуация ${idx+1} из ${scenes.length}`;
+    $('sceneTitle').textContent=sc.title; $('sceneBrief').textContent=sc.brief; $('hint').textContent=sc.hint;
+    $('facts').innerHTML=sc.facts.map((f,i)=>`<div class="fact"><b>${i+1}</b><span>${f}</span></div>`).join('');
+    $('choices').innerHTML=sc.choices.map((c,i)=>`<button class="choice" data-i="${i}"><div class="letter">${'АБВ'[i]}</div><div><div class="ct">${c.t}</div><div class="cm">${c.m}</div></div></button>`).join('');
+    document.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>choose(+btn.dataset.i),{once:true}));
+  }
+  function choose(i){
+    document.querySelectorAll('.choice').forEach(b=>b.disabled=true);
+    const c=scenes[idx].choices[i];
+    state.risk=clamp(state.risk+c.risk,0,100); state.time=clamp(state.time+c.time,0,999); state.team=clamp(state.team+c.team,0,state.maxTeam); state.score+=c.score; state.tags.push(...c.tag);
+    renderMeters(); renderLog();
+    $('fbTitle').textContent = c.score>10?'Последствие: риск снижен': c.score>=0?'Последствие: компромисс':'Последствие: ошибка';
+    $('fbText').textContent = c.fb;
+    $('feedback').classList.add('show');
+    setTimeout(()=>{
+      $('feedback').classList.remove('show');
+      if(c.next==='end' || state.risk>=100 || state.team<=0){ finish(); } else { idx=c.next; render(); }
+    }, 1500);
+  }
+  function finish(){
+    const total=clamp(Math.round(state.score + (state.team*12) - state.risk/2 - state.time/18),0,100);
+    const status = total>=75?'Миссия выполнена': total>=50?'Есть нарушения':'Миссия провалена';
+    const advice=[];
+    if(state.tags.some(t=>/окон|стена/.test(t))) advice.push('Выводите людей от окон и фасада.'); else advice.push('Первое действие — убрать группу от окон.');
+    if(state.tags.some(t=>/трогали|подняли/.test(t))) advice.push('Не трогайте фрагменты, боеприпасы и незнакомые предметы.'); else advice.push('Опасные предметы обходите и передавайте службам место.');
+    if(state.tags.some(t=>/официально|сигнал/.test(t))) advice.push('Выходите только после официальной отмены угрозы.'); else advice.push('Сообщение в чате не заменяет сигнал отмены угрозы.');
+    $('modal').innerHTML=`<div class="result"><div><h3>${status}</h3><p>Вы эвакуировали ${state.team} из ${state.maxTeam}. Итоговый риск: ${state.risk}. Время: ${fmtTime(state.time)}.</p><ul>${advice.map(a=>`<li>${a}</li>`).join('')}</ul><button class="btn" id="again">Пройти ещё раз</button></div><div class="artMini"><div class="scoreBig">${total}<span>/100</span></div><p>Оценка учитывает людей, риск, время и последствия решений.</p></div></div>`;
+    $('modal').classList.add('show'); $('again').addEventListener('click',reset);
+  }
+  $('restartBtn').addEventListener('click', reset);
+  reset();
+})();
+</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a09008753ac5f476',t:'MTc4MTAwNzAyNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
